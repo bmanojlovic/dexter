@@ -26,6 +26,7 @@ var rootCmd = &cobra.Command{
 	Short: "AWS profile and Kubernetes namespace manager",
 	Long:  "Interactive tool for managing AWS profiles and Kubernetes namespaces",
 	Args:  cobra.MaximumNArgs(1),
+	Version: version + " (" + commit + ") built on " + date,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Handle -p flag with optional profile argument
 		if privateFlag {

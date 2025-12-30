@@ -20,10 +20,14 @@ jobs:
       
       - name: Build binaries
         run: |
-          GOOS=linux GOARCH=amd64 go build -o dexter-linux-amd64
-          GOOS=linux GOARCH=arm64 go build -o dexter-linux-arm64
-          GOOS=darwin GOARCH=amd64 go build -o dexter-darwin-amd64
-          GOOS=darwin GOARCH=arm64 go build -o dexter-darwin-arm64
+          VERSION=${GITHUB_REF#refs/tags/}
+          COMMIT=${GITHUB_SHA::7}
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          LDFLAGS="-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}"
+          GOOS=linux GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dexter-linux-amd64
+          GOOS=linux GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dexter-linux-arm64
+          GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dexter-darwin-amd64
+          GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dexter-darwin-arm64
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
