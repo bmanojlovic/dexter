@@ -101,16 +101,79 @@ var initCmd = &cobra.Command{
 			fmt.Printf(`# Add this to your ~/.bashrc or ~/.zshrc:
 # eval "$(dexter init)" >> ~/.bashrc
 dexctx() {
-    eval "$(%s "$@")"
+    if [ "$1" = "update" ]; then
+        echo "Checking for updates..." >&2
+        CURRENT=$(%s --version 2>&1 | head -n1 | awk '{print $3}')
+        
+        LATEST=$(curl -s https://api.github.com/repos/akomic/dexter/releases/latest | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+        
+        if [ -z "$LATEST" ]; then
+            echo "Failed to check for updates" >&2
+            return 1
+        fi
+        
+        if [ "$LATEST" = "$CURRENT" ]; then
+            echo "Already on latest version: $CURRENT" >&2
+            return 0
+        fi
+        
+        echo "Updating from $CURRENT to $LATEST..." >&2
+        ARCH=$(uname -m)
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        [ "$ARCH" = "x86_64" ] && ARCH="amd64"
+        
+        BINARY="dexter-${OS}-${ARCH}"
+        URL="https://github.com/akomic/dexter/releases/latest/download/${BINARY}"
+        
+        TEMP=$(mktemp)
+        if ! curl -sL "$URL" -o "$TEMP"; then
+            echo "Failed to download update" >&2
+            rm -f "$TEMP"
+            return 1
+        fi
+        
+        chmod +x "$TEMP"
+        DEXTER_PATH=$(which dexter)
+        mv "$TEMP" "$DEXTER_PATH"
+        echo "Successfully updated to $LATEST" >&2
+    else
+        eval "$(%s "$@")"
+    fi
 }
-`, binaryPath)
+`, binaryPath, binaryPath)
 		case "fish":
 			fmt.Printf(`# Add this to your ~/.config/fish/config.fish:
 # eval "$(dexter init fish)" >> ~/.config/fish/config.fish
 function dexctx
-    eval (%s $argv)
+    if test "$argv[1]" = "update"
+        echo "Checking for updates..." >&2
+        set LATEST (curl -s https://api.github.com/repos/akomic/dexter/releases/latest | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+        set CURRENT (%s --version 2>&1 | awk '{print $1}')
+        
+        if test "$LATEST" != "$CURRENT"
+            echo "Updating from $CURRENT to $LATEST..." >&2
+            set ARCH (uname -m)
+            set OS (uname -s | tr '[:upper:]' '[:lower:]')
+            test "$ARCH" = "x86_64"; and set ARCH "amd64"
+            
+            set BINARY "dexter-$OS-$ARCH"
+            set URL "https://github.com/akomic/dexter/releases/latest/download/$BINARY"
+            
+            set TEMP (mktemp)
+            curl -sL "$URL" -o "$TEMP"
+            chmod +x "$TEMP"
+            
+            set DEXTER_PATH (which dexter)
+            mv "$TEMP" "$DEXTER_PATH"
+            echo "Updated to $LATEST" >&2
+        else
+            echo "Already on latest version: $CURRENT" >&2
+        end
+    else
+        eval (%s $argv)
+    end
 end
-`, binaryPath)
+`, binaryPath, binaryPath)
 		default:
 			fmt.Fprintf(os.Stderr, "Unsupported shell: %s\n", shell)
 		}
