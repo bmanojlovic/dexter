@@ -9,6 +9,7 @@ Your friendly neighborhood profile manager. Interactive CLI tool for AWS profile
 - ✅ Automatic file validation (AWS config, kubeconfig)
 - 👀 View profile contents before loading
 - ⌨️  Interactive TUI with arrow key navigation
+- 🔍 Fuzzy search for profiles and namespaces
 - 🐚 Seamless shell integration
 
 ## Installation
@@ -117,6 +118,8 @@ dexctx -n
 - `↑/↓` or `j/k` - Navigate
 - `Enter` - Select profile
 - `v` - View profile contents
+- `/` - Start fuzzy search (profiles and namespaces)
+- `Esc` - Exit search mode (when searching)
 - `q` - Quit
 
 ## Profile Organization

@@ -9,12 +9,12 @@ import (
 )
 
 var (
-	privateFlag     bool
-	groupFlag       string
-	namespaceFlag   bool
-	awsArg          string
-	profilesRoot    string
-	listAWS         bool
+	privateFlag   bool
+	groupFlag     string
+	namespaceFlag bool
+	awsArg        string
+	profilesRoot  string
+	listAWS       bool
 )
 
 func init() {
@@ -22,10 +22,10 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "dexter [profile_number]",
-	Short: "AWS profile and Kubernetes namespace manager",
-	Long:  "Interactive tool for managing AWS profiles and Kubernetes namespaces",
-	Args:  cobra.MaximumNArgs(1),
+	Use:     "dexter [profile_number]",
+	Short:   "AWS profile and Kubernetes namespace manager",
+	Long:    "Interactive tool for managing AWS profiles and Kubernetes namespaces",
+	Args:    cobra.MaximumNArgs(1),
 	Version: version + " (" + commit + ") built on " + date,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Handle -p flag with optional profile argument
@@ -66,7 +66,13 @@ var rootCmd = &cobra.Command{
 
 		// Handle positional argument (profile number or name)
 		if len(args) == 1 {
-			loadProfile(profilesRoot, args[0], false)
+			// Try to load profile directly first
+			if profileExists(profilesRoot, args[0]) {
+				loadProfile(profilesRoot, args[0], false)
+			} else {
+				// If profile doesn't exist, open fuzzy search with pre-filled search
+				chooseProfileWithSearch(profilesRoot, false, args[0])
+			}
 			return
 		}
 
@@ -93,9 +99,9 @@ var initCmd = &cobra.Command{
 		if len(args) > 0 {
 			shell = args[0]
 		}
-		
+
 		binaryPath, _ := os.Executable()
-		
+
 		switch shell {
 		case "bash", "zsh":
 			fmt.Printf(`# Add this to your ~/.bashrc or ~/.zshrc:

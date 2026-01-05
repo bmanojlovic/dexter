@@ -18,6 +18,30 @@ type Profile struct {
 	IsPrivate bool
 }
 
+func profileExists(profilesPath, name string) bool {
+	// Check if it's a numeric index
+	if num, err := strconv.Atoi(name); err == nil {
+		profiles := listProfiles(profilesPath, false)
+		return num > 0 && num <= len(profiles)
+	}
+
+	// Check for exact name match
+	profiles := listProfiles(profilesPath, false)
+	for _, p := range profiles {
+		if p.Name == name {
+			return true
+		}
+	}
+
+	// Check if it's a valid file path
+	profilePath := filepath.Join(profilesPath, name)
+	if _, err := os.Stat(profilePath); err == nil {
+		return true
+	}
+
+	return false
+}
+
 func listProfiles(profilesPath string, private bool) []Profile {
 	var profiles []Profile
 	var dirs []Profile
@@ -72,7 +96,8 @@ func hasAWSProfile(filePath string) bool {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), "AWS_PROFILE") {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "export ") {
 			return true
 		}
 	}
@@ -130,7 +155,7 @@ func loadProfileFile(path string) {
 	}
 
 	var warnings []string
-	
+
 	// Check for file path variables
 	if awsConfigFile, ok := envMap["AWS_CONFIG_FILE"]; ok {
 		filePath := strings.ReplaceAll(awsConfigFile, "~", os.Getenv("HOME"))
@@ -139,7 +164,7 @@ func loadProfileFile(path string) {
 			warnings = append(warnings, fmt.Sprintf("AWS_CONFIG_FILE not found: %s", filePath))
 		}
 	}
-	
+
 	if kubeconfig, ok := envMap["KUBECONFIG"]; ok {
 		filePath := strings.ReplaceAll(kubeconfig, "~", os.Getenv("HOME"))
 		filePath = os.ExpandEnv(filePath)
